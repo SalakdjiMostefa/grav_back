@@ -16,6 +16,7 @@ import com.aura.cosmetics.repository.ProductRepository;
 import com.aura.cosmetics.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -28,12 +29,15 @@ public class DataInitializer implements CommandLineRunner {
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JdbcTemplate jdbcTemplate;
 
     public DataInitializer(CategoryRepository categoryRepository,
                            ProductRepository productRepository,
                            OrderRepository orderRepository,
                            UserRepository userRepository,
-                           PasswordEncoder passwordEncoder) {
+                           PasswordEncoder passwordEncoder,
+                           JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
         this.categoryRepository = categoryRepository;
         this.productRepository = productRepository;
         this.orderRepository = orderRepository;
@@ -43,6 +47,12 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        try {
+            jdbcTemplate.execute("ALTER TABLE users MODIFY COLUMN role VARCHAR(50) NOT NULL");
+        } catch (Exception ignored) {}
+        try {
+            jdbcTemplate.execute("ALTER TABLE users MODIFY COLUMN wholesale_status VARCHAR(50) NOT NULL DEFAULT 'NONE'");
+        } catch (Exception ignored) {}
         if (categoryRepository.count() == 0) {
             initCategoriesAndProducts();
         }
