@@ -74,6 +74,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/orders").authenticated()
 
                 // --- Routes ADMIN uniquement ---
+                .requestMatchers(HttpMethod.POST, "/api/products/images").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/products").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/products/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/products/**").hasRole("ADMIN")
