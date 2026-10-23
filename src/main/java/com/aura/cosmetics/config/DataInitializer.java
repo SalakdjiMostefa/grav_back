@@ -51,6 +51,74 @@ public class DataInitializer implements CommandLineRunner {
         }
         if (userRepository.count() == 0) {
             initUsers();
+        } else {
+            ensureDemoAccountsAndProducts();
+        }
+    }
+
+    private void ensureDemoAccountsAndProducts() {
+        // Standard clients who are not wholesale applicants should have status NONE
+        userRepository.findAll().forEach(user -> {
+            if (user.getRole() == Role.ROLE_CLIENT && (user.getCompanyName() == null || user.getCompanyName().isBlank())) {
+                user.setWholesaleStatus(WholesaleStatus.NONE);
+                userRepository.save(user);
+            }
+        });
+
+        // Seed demo approved wholesale partner
+        if (userRepository.findByEmail("revendeur@salon-paris.fr").isEmpty()) {
+            User proApproved = new User();
+            proApproved.setFullName("Leïla Benali");
+            proApproved.setEmail("revendeur@salon-paris.fr");
+            proApproved.setPassword(passwordEncoder.encode("pro2026"));
+            proApproved.setPhone("06 77 88 99 00");
+            proApproved.setAddress("12 Rue Royale, 75008 Paris");
+            proApproved.setRole(Role.ROLE_WHOLESALE);
+            proApproved.setWholesaleStatus(WholesaleStatus.APPROVED);
+            proApproved.setCompanyName("Institut Beauté Spa Royal");
+            proApproved.setTradeRegister("RC-PARIS-2024-B-89412");
+            proApproved.setBusinessPhone("01 42 68 55 00");
+            proApproved.setBusinessAddress("12 Rue Royale, 75008 Paris");
+            proApproved.setWholesaleRequestedAt(LocalDateTime.now().minusDays(5));
+            proApproved.setWholesaleApprovedAt(LocalDateTime.now().minusDays(3));
+            userRepository.save(proApproved);
+        }
+
+        // Seed demo pending wholesale applicant
+        if (userRepository.findByEmail("contact@parapharmacie-alger.dz").isEmpty()) {
+            User proPending = new User();
+            proPending.setFullName("Karim Mansouri");
+            proPending.setEmail("contact@parapharmacie-alger.dz");
+            proPending.setPassword(passwordEncoder.encode("pro2026"));
+            proPending.setPhone("+213 550 12 34 56");
+            proPending.setAddress("45 Boulevard Didouche Mourad, Alger");
+            proPending.setRole(Role.ROLE_CLIENT);
+            proPending.setWholesaleStatus(WholesaleStatus.PENDING);
+            proPending.setCompanyName("Parapharmacie El Hana");
+            proPending.setTradeRegister("RC-16/00-0987654B20");
+            proPending.setBusinessPhone("+213 21 63 45 78");
+            proPending.setBusinessAddress("45 Boulevard Didouche Mourad, Alger");
+            proPending.setWholesaleRequestedAt(LocalDateTime.now().minusHours(2));
+            userRepository.save(proPending);
+        }
+
+        // Populate wholesale prices for all products
+        Double[] defaultWholesalePrices = new Double[] { 24.50, 21.00, 19.00, 14.00, 16.50, 27.00 };
+        var products = productRepository.findAll();
+        for (int i = 0; i < products.size(); i++) {
+            var p = products.get(i);
+            boolean updated = false;
+            if (p.getWholesalePrice() == null) {
+                p.setWholesalePrice(i < defaultWholesalePrices.length ? defaultWholesalePrices[i] : Math.round(p.getPrice() * 0.5 * 100.0) / 100.0);
+                updated = true;
+            }
+            if (p.getWholesaleMinQty() == null || p.getWholesaleMinQty() <= 0) {
+                p.setWholesaleMinQty(12);
+                updated = true;
+            }
+            if (updated) {
+                productRepository.save(p);
+            }
         }
     }
 
