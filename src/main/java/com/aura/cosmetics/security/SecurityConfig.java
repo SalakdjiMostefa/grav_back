@@ -70,8 +70,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                // --- Routes CLIENTS (token requis, role CLIENT ou ADMIN) ---
-                .requestMatchers(HttpMethod.POST, "/api/orders").authenticated()
+                // --- Routes PUBLIQUES : Commande ouverte aux visiteurs (paiement a la livraison) et clients ---
+                .requestMatchers(HttpMethod.POST, "/api/orders", "/api/orders/**").permitAll()
 
                 // --- Routes ADMIN uniquement ---
                 .requestMatchers(HttpMethod.POST, "/api/products/images").hasRole("ADMIN")
