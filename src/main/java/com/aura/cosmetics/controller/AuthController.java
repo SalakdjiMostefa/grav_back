@@ -3,6 +3,7 @@ package com.aura.cosmetics.controller;
 import com.aura.cosmetics.dto.AuthResponse;
 import com.aura.cosmetics.dto.LoginRequest;
 import com.aura.cosmetics.dto.RegisterRequest;
+import com.aura.cosmetics.dto.WholesaleRegistrationRequest;
 import com.aura.cosmetics.service.AuthService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +21,6 @@ public class AuthController {
         this.authService = authService;
     }
 
-    /** POST /api/auth/register — Création d'un compte client */
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
         try {
@@ -32,7 +32,17 @@ public class AuthController {
         }
     }
 
-    /** POST /api/auth/login — Connexion admin ou client */
+    @PostMapping("/register-wholesale")
+    public ResponseEntity<?> registerWholesale(@RequestBody WholesaleRegistrationRequest request) {
+        try {
+            AuthResponse response = authService.registerWholesale(request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {

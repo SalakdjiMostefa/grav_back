@@ -1,0 +1,28 @@
+package com.aura.cosmetics.dto;
+
+public class WholesaleRegistrationRequest {
+    private String fullName;
+    private String email;
+    private String password;
+    private String phone;
+    private String companyName;
+    private String tradeRegister;
+    private String businessAddress;
+
+    public WholesaleRegistrationRequest() {}
+
+    public String getFullName() { return fullName; }
+    public void setFullName(String fullName) { this.fullName = fullName; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
+    public String getCompanyName() { return companyName; }
+    public void setCompanyName(String companyName) { this.companyName = companyName; }
+    public String getTradeRegister() { return tradeRegister; }
+    public void setTradeRegister(String tradeRegister) { this.tradeRegister = tradeRegister; }
+    public String getBusinessAddress() { return businessAddress; }
+    public void setBusinessAddress(String businessAddress) { this.businessAddress = businessAddress; }
+}

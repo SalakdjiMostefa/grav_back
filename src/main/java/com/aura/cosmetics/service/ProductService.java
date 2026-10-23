@@ -9,6 +9,8 @@ import com.aura.cosmetics.entity.ProductImage;
 import com.aura.cosmetics.enums.ProductStatus;
 import com.aura.cosmetics.repository.CategoryRepository;
 import com.aura.cosmetics.repository.ProductRepository;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,15 +33,17 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public List<ProductDTO> getAllProducts() {
+        boolean canSeeWholesale = isWholesaleAuthorized();
         return productRepository.findAll().stream()
-                .map(this::toDTO)
+                .map(p -> toDTO(p, canSeeWholesale))
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public ProductDTO getProductById(Long id) {
+        boolean canSeeWholesale = isWholesaleAuthorized();
         return productRepository.findById(id)
-                .map(this::toDTO)
+                .map(p -> toDTO(p, canSeeWholesale))
                 .orElse(null);
     }
 
@@ -47,7 +51,7 @@ public class ProductService {
         Product product = new Product();
         mapDtoToEntity(dto, product);
         Product saved = productRepository.save(product);
-        return toDTO(saved);
+        return toDTO(saved, true);
     }
 
     public ProductDTO updateProduct(Long id, ProductDTO dto) {
@@ -56,7 +60,7 @@ public class ProductService {
 
         mapDtoToEntity(dto, product);
         Product updated = productRepository.save(product);
-        return toDTO(updated);
+        return toDTO(updated, true);
     }
 
     public boolean deleteProduct(Long id) {
@@ -72,18 +76,18 @@ public class ProductService {
         product.setBrand(dto.getBrand() != null ? dto.getBrand() : "AURA Cosmétiques");
         product.setDescription(dto.getDescription());
         product.setPrice(dto.getPrice() != null ? dto.getPrice() : 0.0);
+        product.setWholesalePrice(dto.getWholesalePrice());
+        product.setWholesaleMinQty(dto.getWholesaleMinQty() != null ? dto.getWholesaleMinQty() : 12);
         product.setStock(dto.getStock() != null ? dto.getStock() : 0);
         product.setRating(dto.getRating() != null ? dto.getRating() : 5.0);
         product.setStatus(dto.getStatus() != null ? dto.getStatus() : ProductStatus.EN_STOCK);
 
-        // Résolution de la catégorie (soit ID soit Objet)
         Long categoryId = extractCategoryId(dto.getCategory());
         if (categoryId != null) {
             Category category = categoryRepository.findById(categoryId).orElse(null);
             product.setCategory(category);
         }
 
-        // Images
         if (dto.getImages() != null && !dto.getImages().isEmpty()) {
             List<ProductImage> imageEntities = new ArrayList<>();
             for (ProductImageDTO imgDto : dto.getImages()) {
@@ -116,7 +120,24 @@ public class ProductService {
         }
     }
 
+    private boolean isWholesaleAuthorized() {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+                return false;
+            }
+            return auth.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_WHOLESALE"));
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public ProductDTO toDTO(Product p) {
+        return toDTO(p, isWholesaleAuthorized());
+    }
+
+    public ProductDTO toDTO(Product p, boolean canSeeWholesale) {
         if (p == null) return null;
         ProductDTO dto = new ProductDTO();
         dto.setId(p.getId());
@@ -124,6 +145,15 @@ public class ProductService {
         dto.setBrand(p.getBrand());
         dto.setDescription(p.getDescription());
         dto.setPrice(p.getPrice());
+
+        if (canSeeWholesale) {
+            dto.setWholesalePrice(p.getWholesalePrice());
+            dto.setWholesaleMinQty(p.getWholesaleMinQty() != null ? p.getWholesaleMinQty() : 12);
+        } else {
+            dto.setWholesalePrice(null);
+            dto.setWholesaleMinQty(null);
+        }
+
         dto.setStock(p.getStock());
         dto.setRating(p.getRating());
         dto.setStatus(p.getStatus());

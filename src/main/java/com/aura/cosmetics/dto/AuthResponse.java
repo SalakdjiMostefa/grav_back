@@ -1,6 +1,7 @@
 package com.aura.cosmetics.dto;
 
 import com.aura.cosmetics.enums.Role;
+import com.aura.cosmetics.enums.WholesaleStatus;
 
 public class AuthResponse {
     private String token;
@@ -11,6 +12,9 @@ public class AuthResponse {
     private String phone;
     private String address;
     private Role role;
+    private WholesaleStatus wholesaleStatus = WholesaleStatus.NONE;
+    private String companyName;
+    private String tradeRegister;
 
     public AuthResponse() {}
 
@@ -22,6 +26,19 @@ public class AuthResponse {
         this.phone = phone;
         this.address = address;
         this.role = role;
+    }
+
+    public AuthResponse(String token, Long id, String fullName, String email, String phone, String address, Role role, WholesaleStatus wholesaleStatus, String companyName, String tradeRegister) {
+        this.token = token;
+        this.id = id;
+        this.fullName = fullName;
+        this.email = email;
+        this.phone = phone;
+        this.address = address;
+        this.role = role;
+        this.wholesaleStatus = wholesaleStatus;
+        this.companyName = companyName;
+        this.tradeRegister = tradeRegister;
     }
 
     public String getToken() { return token; }
@@ -40,4 +57,10 @@ public class AuthResponse {
     public void setAddress(String address) { this.address = address; }
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
+    public WholesaleStatus getWholesaleStatus() { return wholesaleStatus; }
+    public void setWholesaleStatus(WholesaleStatus wholesaleStatus) { this.wholesaleStatus = wholesaleStatus; }
+    public String getCompanyName() { return companyName; }
+    public void setCompanyName(String companyName) { this.companyName = companyName; }
+    public String getTradeRegister() { return tradeRegister; }
+    public void setTradeRegister(String tradeRegister) { this.tradeRegister = tradeRegister; }
 }

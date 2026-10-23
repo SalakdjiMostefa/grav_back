@@ -1,9 +1,15 @@
 package com.aura.cosmetics.config;
 
-import com.aura.cosmetics.entity.*;
+import com.aura.cosmetics.entity.Category;
+import com.aura.cosmetics.entity.Order;
+import com.aura.cosmetics.entity.OrderItem;
+import com.aura.cosmetics.entity.Product;
+import com.aura.cosmetics.entity.ProductImage;
+import com.aura.cosmetics.entity.User;
 import com.aura.cosmetics.enums.OrderStatus;
 import com.aura.cosmetics.enums.ProductStatus;
 import com.aura.cosmetics.enums.Role;
+import com.aura.cosmetics.enums.WholesaleStatus;
 import com.aura.cosmetics.repository.CategoryRepository;
 import com.aura.cosmetics.repository.OrderRepository;
 import com.aura.cosmetics.repository.ProductRepository;
@@ -13,7 +19,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -50,7 +55,7 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void initUsers() {
-        // Compte ADMIN par défaut
+        // Admin
         userRepository.save(new User(
                 "Administrateur AURA",
                 "admin@aura-cosmetics.fr",
@@ -60,7 +65,7 @@ public class DataInitializer implements CommandLineRunner {
                 Role.ROLE_ADMIN
         ));
 
-        // Compte CLIENT de démo
+        // Client détail
         userRepository.save(new User(
                 "Sophie Delacroix",
                 "sophie@example.fr",
@@ -69,10 +74,42 @@ public class DataInitializer implements CommandLineRunner {
                 "3 Allée des Acacias, 33000 Bordeaux",
                 Role.ROLE_CLIENT
         ));
+
+        // Grossiste Approuvé
+        User proApproved = new User();
+        proApproved.setFullName("Leïla Benali");
+        proApproved.setEmail("revendeur@salon-paris.fr");
+        proApproved.setPassword(passwordEncoder.encode("pro2026"));
+        proApproved.setPhone("06 77 88 99 00");
+        proApproved.setAddress("12 Rue Royale, 75008 Paris");
+        proApproved.setRole(Role.ROLE_WHOLESALE);
+        proApproved.setWholesaleStatus(WholesaleStatus.APPROVED);
+        proApproved.setCompanyName("Institut Beauté & Spa Royal");
+        proApproved.setTradeRegister("RC-PARIS-2024-B-89412");
+        proApproved.setBusinessPhone("01 42 68 55 00");
+        proApproved.setBusinessAddress("12 Rue Royale, 75008 Paris");
+        proApproved.setWholesaleRequestedAt(LocalDateTime.now().minusDays(5));
+        proApproved.setWholesaleApprovedAt(LocalDateTime.now().minusDays(3));
+        userRepository.save(proApproved);
+
+        // Grossiste En Attente
+        User proPending = new User();
+        proPending.setFullName("Karim Mansouri");
+        proPending.setEmail("contact@parapharmacie-alger.dz");
+        proPending.setPassword(passwordEncoder.encode("pro2026"));
+        proPending.setPhone("+213 550 12 34 56");
+        proPending.setAddress("45 Boulevard Didouche Mourad, Alger");
+        proPending.setRole(Role.ROLE_CLIENT);
+        proPending.setWholesaleStatus(WholesaleStatus.PENDING);
+        proPending.setCompanyName("Parapharmacie El Hana");
+        proPending.setTradeRegister("RC-16/00-0987654B20");
+        proPending.setBusinessPhone("+213 21 63 45 78");
+        proPending.setBusinessAddress("45 Boulevard Didouche Mourad, Alger");
+        proPending.setWholesaleRequestedAt(LocalDateTime.now().minusHours(2));
+        userRepository.save(proPending);
     }
 
     private void initCategoriesAndProducts() {
-        // 1. Catégories
         Category catSerums = categoryRepository.save(new Category(
                 "Sérums & Huiles",
                 "Formules botaniques ultra-actives pour régénérer la peau",
@@ -97,13 +134,14 @@ public class DataInitializer implements CommandLineRunner {
                 "https://images.unsplash.com/photo-1556228722-d0b71946ec98?auto=format&fit=crop&w=600&q=80"
         ));
 
-        // 2. Produits
         Product p1 = new Product();
         p1.setName("Élixir Céleste Régénérant");
         p1.setBrand("AURA Botanique");
         p1.setDescription("Sérum ultra-concentré à l’acide hyaluronique pur et extraits de rose sauvage de Provence. Repulpe instantanément l’épiderme et illumine le teint.");
         p1.setPrice(49.00);
-        p1.setStock(18);
+        p1.setWholesalePrice(24.50);
+        p1.setWholesaleMinQty(12);
+        p1.setStock(180);
         p1.setRating(4.9);
         p1.setStatus(ProductStatus.NOUVEAU);
         p1.setCategory(catSerums);
@@ -115,7 +153,9 @@ public class DataInitializer implements CommandLineRunner {
         p2.setBrand("Maison AURA");
         p2.setDescription("Crème onctueuse enrichie en beurre de karité bio et peptides de fleurs blanches. Nourrit en profondeur et renforce la barrière cutanée.");
         p2.setPrice(42.50);
-        p2.setStock(12);
+        p2.setWholesalePrice(21.00);
+        p2.setWholesaleMinQty(12);
+        p2.setStock(120);
         p2.setRating(4.8);
         p2.setStatus(ProductStatus.EN_STOCK);
         p2.setCategory(catCremes);
@@ -127,7 +167,9 @@ public class DataInitializer implements CommandLineRunner {
         p3.setBrand("AURA Botanique");
         p3.setDescription("Huile sèche réparatrice pour le visage et le cou. Fini satiné non gras au parfum délicat et envoûtant de fleur d’oranger.");
         p3.setPrice(38.00);
-        p3.setStock(4);
+        p3.setWholesalePrice(19.00);
+        p3.setWholesaleMinQty(12);
+        p3.setStock(140);
         p3.setRating(4.9);
         p3.setStatus(ProductStatus.EN_STOCK);
         p3.setCategory(catSerums);
@@ -139,7 +181,9 @@ public class DataInitializer implements CommandLineRunner {
         p4.setBrand("Maison AURA");
         p4.setDescription("Hydrolat pur de fleurs immortelles et camomille romaine. Apaise les rougeurs, tonifie les pores et prépare la peau à recevoir les soins.");
         p4.setPrice(26.00);
-        p4.setStock(25);
+        p4.setWholesalePrice(13.00);
+        p4.setWholesaleMinQty(12);
+        p4.setStock(250);
         p4.setRating(4.7);
         p4.setStatus(ProductStatus.EN_STOCK);
         p4.setCategory(catNettoyants);
@@ -151,9 +195,11 @@ public class DataInitializer implements CommandLineRunner {
         p5.setBrand("AURA Botanique");
         p5.setDescription("Masque crémeux détoxifiant aux minéraux marins. Resserre le grain de peau sans dessécher pour un effet peau neuve garanti.");
         p5.setPrice(32.00);
-        p5.setStock(0);
+        p5.setWholesalePrice(16.00);
+        p5.setWholesaleMinQty(12);
+        p5.setStock(100);
         p5.setRating(4.6);
-        p5.setStatus(ProductStatus.RUPTURE);
+        p5.setStatus(ProductStatus.EN_STOCK);
         p5.setCategory(catMasques);
         p5.addImage(new ProductImage("masque.jpg", "https://images.unsplash.com/photo-1556228722-d0b71946ec98?auto=format&fit=crop&w=800&q=80", 1));
         productRepository.save(p5);
@@ -163,7 +209,9 @@ public class DataInitializer implements CommandLineRunner {
         p6.setBrand("Maison AURA");
         p6.setDescription("Soin nocturne intensif à la cire d’abeille bio et céramides végétales. Régénère l’épiderme pendant le sommeil pour un réveil lumineux.");
         p6.setPrice(54.00);
-        p6.setStock(9);
+        p6.setWholesalePrice(27.00);
+        p6.setWholesaleMinQty(12);
+        p6.setStock(90);
         p6.setRating(5.0);
         p6.setStatus(ProductStatus.NOUVEAU);
         p6.setCategory(catCremes);
@@ -183,16 +231,5 @@ public class DataInitializer implements CommandLineRunner {
         o1.addItem(new OrderItem(1L, "Élixir Céleste Régénérant", 1, 49.00));
         o1.addItem(new OrderItem(2L, "Crème Velours Éclat Divin", 1, 42.50));
         orderRepository.save(o1);
-
-        Order o2 = new Order();
-        o2.setCustomerName("Julien Mercier");
-        o2.setEmail("j.mercier@orange.fr");
-        o2.setPhone("07 89 01 23 45");
-        o2.setAddress("8 Boulevard des Belges, 69006 Lyon");
-        o2.setTotal(76.00);
-        o2.setStatus(OrderStatus.EXPEDIEE);
-        o2.setCreatedAt(LocalDateTime.now().minusDays(1));
-        o2.addItem(new OrderItem(3L, "Huile Précieuse d’Argan & Néroli", 2, 38.00));
-        orderRepository.save(o2);
     }
 }

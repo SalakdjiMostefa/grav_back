@@ -60,8 +60,6 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-
-                // --- Routes PUBLIQUES (pas de token requis) ---
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/ping", "/api/health").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/products").permitAll()
@@ -69,11 +67,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/categories").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
-                // --- Routes PUBLIQUES : Commande ouverte aux visiteurs (paiement a la livraison) et clients ---
                 .requestMatchers(HttpMethod.POST, "/api/orders", "/api/orders/**").permitAll()
-
-                // --- Routes ADMIN uniquement ---
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/products/images").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/products").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/products/**").hasRole("ADMIN")
@@ -84,8 +79,6 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/orders").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/orders/**").hasRole("ADMIN")
                 .requestMatchers("/api/dashboard/**").hasRole("ADMIN")
-
-                // Tout le reste necessite une authentification
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthFilter(), UsernamePasswordAuthenticationFilter.class);

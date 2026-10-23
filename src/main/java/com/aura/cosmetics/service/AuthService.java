@@ -3,13 +3,20 @@ package com.aura.cosmetics.service;
 import com.aura.cosmetics.dto.AuthResponse;
 import com.aura.cosmetics.dto.LoginRequest;
 import com.aura.cosmetics.dto.RegisterRequest;
+import com.aura.cosmetics.dto.WholesaleRegistrationRequest;
+import com.aura.cosmetics.dto.WholesaleRequestDTO;
 import com.aura.cosmetics.entity.User;
 import com.aura.cosmetics.enums.Role;
+import com.aura.cosmetics.enums.WholesaleStatus;
 import com.aura.cosmetics.repository.UserRepository;
 import com.aura.cosmetics.security.JwtUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -25,7 +32,6 @@ public class AuthService {
         this.jwtUtils = jwtUtils;
     }
 
-    /** Inscription d'un nouveau CLIENT */
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Un compte existe déjà avec cet email : " + request.getEmail());
@@ -46,7 +52,31 @@ public class AuthService {
         return buildResponse(token, saved);
     }
 
-    /** Connexion pour ADMIN et CLIENTS */
+    public AuthResponse registerWholesale(WholesaleRegistrationRequest request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("Un compte existe déjà avec cet email : " + request.getEmail());
+        }
+
+        User user = new User();
+        user.setFullName(request.getFullName());
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setPhone(request.getPhone());
+        user.setAddress(request.getBusinessAddress());
+        user.setRole(Role.ROLE_CLIENT);
+        user.setWholesaleStatus(WholesaleStatus.PENDING);
+        user.setCompanyName(request.getCompanyName());
+        user.setTradeRegister(request.getTradeRegister());
+        user.setBusinessPhone(request.getPhone());
+        user.setBusinessAddress(request.getBusinessAddress());
+        user.setWholesaleRequestedAt(LocalDateTime.now());
+
+        User saved = userRepository.save(user);
+        String token = jwtUtils.generateToken(saved.getEmail(), saved.getRole().name());
+
+        return buildResponse(token, saved);
+    }
+
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Email ou mot de passe incorrect."));
@@ -59,6 +89,56 @@ public class AuthService {
         return buildResponse(token, user);
     }
 
+    @Transactional(readOnly = true)
+    public List<WholesaleRequestDTO> getWholesaleRequests(WholesaleStatus statusFilter) {
+        List<User> users;
+        if (statusFilter != null) {
+            users = userRepository.findByWholesaleStatus(statusFilter);
+        } else {
+            users = userRepository.findByWholesaleStatusNot(WholesaleStatus.NONE);
+        }
+
+        return users.stream().map(this::toWholesaleDTO).collect(Collectors.toList());
+    }
+
+    public WholesaleRequestDTO approveWholesale(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé avec l'ID : " + userId));
+
+        user.setWholesaleStatus(WholesaleStatus.APPROVED);
+        user.setRole(Role.ROLE_WHOLESALE);
+        user.setWholesaleApprovedAt(LocalDateTime.now());
+        User saved = userRepository.save(user);
+
+        return toWholesaleDTO(saved);
+    }
+
+    public WholesaleRequestDTO rejectWholesale(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé avec l'ID : " + userId));
+
+        user.setWholesaleStatus(WholesaleStatus.REJECTED);
+        User saved = userRepository.save(user);
+
+        return toWholesaleDTO(saved);
+    }
+
+    private WholesaleRequestDTO toWholesaleDTO(User user) {
+        WholesaleRequestDTO dto = new WholesaleRequestDTO();
+        dto.setId(user.getId());
+        dto.setFullName(user.getFullName());
+        dto.setEmail(user.getEmail());
+        dto.setPhone(user.getPhone() != null ? user.getPhone() : user.getBusinessPhone());
+        dto.setCompanyName(user.getCompanyName());
+        dto.setTradeRegister(user.getTradeRegister());
+        dto.setBusinessAddress(user.getBusinessAddress() != null ? user.getBusinessAddress() : user.getAddress());
+        dto.setWholesaleStatus(user.getWholesaleStatus());
+        dto.setRole(user.getRole());
+        dto.setRequestedAt(user.getWholesaleRequestedAt());
+        dto.setApprovedAt(user.getWholesaleApprovedAt());
+        return dto;
+    }
+
     private AuthResponse buildResponse(String token, User user) {
         return new AuthResponse(
                 token,
@@ -67,7 +147,10 @@ public class AuthService {
                 user.getEmail(),
                 user.getPhone(),
                 user.getAddress(),
-                user.getRole()
+                user.getRole(),
+                user.getWholesaleStatus(),
+                user.getCompanyName(),
+                user.getTradeRegister()
         );
     }
 }

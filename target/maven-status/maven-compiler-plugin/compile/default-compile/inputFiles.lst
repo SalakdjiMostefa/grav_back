@@ -1,5 +1,6 @@
 C:\Users\salak\Downloads\salakdji-commerce\grav_back\src\main\java\com\aura\cosmetics\config\CorsConfig.java
 C:\Users\salak\Downloads\salakdji-commerce\grav_back\src\main\java\com\aura\cosmetics\config\DataInitializer.java
+C:\Users\salak\Downloads\salakdji-commerce\grav_back\src\main\java\com\aura\cosmetics\controller\AdminWholesaleController.java
 C:\Users\salak\Downloads\salakdji-commerce\grav_back\src\main\java\com\aura\cosmetics\controller\AuthController.java
 C:\Users\salak\Downloads\salakdji-commerce\grav_back\src\main\java\com\aura\cosmetics\controller\CategoryController.java
 C:\Users\salak\Downloads\salakdji-commerce\grav_back\src\main\java\com\aura\cosmetics\controller\DashboardController.java
@@ -18,6 +19,8 @@ C:\Users\salak\Downloads\salakdji-commerce\grav_back\src\main\java\com\aura\cosm
 C:\Users\salak\Downloads\salakdji-commerce\grav_back\src\main\java\com\aura\cosmetics\dto\ProductImageDTO.java
 C:\Users\salak\Downloads\salakdji-commerce\grav_back\src\main\java\com\aura\cosmetics\dto\RegisterRequest.java
 C:\Users\salak\Downloads\salakdji-commerce\grav_back\src\main\java\com\aura\cosmetics\dto\StatusUpdateRequest.java
+C:\Users\salak\Downloads\salakdji-commerce\grav_back\src\main\java\com\aura\cosmetics\dto\WholesaleRegistrationRequest.java
+C:\Users\salak\Downloads\salakdji-commerce\grav_back\src\main\java\com\aura\cosmetics\dto\WholesaleRequestDTO.java
 C:\Users\salak\Downloads\salakdji-commerce\grav_back\src\main\java\com\aura\cosmetics\entity\Category.java
 C:\Users\salak\Downloads\salakdji-commerce\grav_back\src\main\java\com\aura\cosmetics\entity\Order.java
 C:\Users\salak\Downloads\salakdji-commerce\grav_back\src\main\java\com\aura\cosmetics\entity\OrderItem.java
@@ -27,6 +30,7 @@ C:\Users\salak\Downloads\salakdji-commerce\grav_back\src\main\java\com\aura\cosm
 C:\Users\salak\Downloads\salakdji-commerce\grav_back\src\main\java\com\aura\cosmetics\enums\OrderStatus.java
 C:\Users\salak\Downloads\salakdji-commerce\grav_back\src\main\java\com\aura\cosmetics\enums\ProductStatus.java
 C:\Users\salak\Downloads\salakdji-commerce\grav_back\src\main\java\com\aura\cosmetics\enums\Role.java
+C:\Users\salak\Downloads\salakdji-commerce\grav_back\src\main\java\com\aura\cosmetics\enums\WholesaleStatus.java
 C:\Users\salak\Downloads\salakdji-commerce\grav_back\src\main\java\com\aura\cosmetics\repository\CategoryRepository.java
 C:\Users\salak\Downloads\salakdji-commerce\grav_back\src\main\java\com\aura\cosmetics\repository\OrderRepository.java
 C:\Users\salak\Downloads\salakdji-commerce\grav_back\src\main\java\com\aura\cosmetics\repository\ProductRepository.java
