@@ -5,6 +5,8 @@ public class OrderItemDTO {
     private String productName;
     private Integer quantity;
     private Double unitPrice;
+    private Boolean isWholesale;
+    private Integer wholesaleStock;
 
     public OrderItemDTO() {}
 
@@ -13,6 +15,16 @@ public class OrderItemDTO {
         this.productName = productName;
         this.quantity = quantity;
         this.unitPrice = unitPrice;
+        this.isWholesale = false;
+    }
+
+    public OrderItemDTO(Long productId, String productName, Integer quantity, Double unitPrice, Boolean isWholesale, Integer wholesaleStock) {
+        this.productId = productId;
+        this.productName = productName;
+        this.quantity = quantity;
+        this.unitPrice = unitPrice;
+        this.isWholesale = isWholesale;
+        this.wholesaleStock = wholesaleStock;
     }
 
     public Long getProductId() {
@@ -45,5 +57,21 @@ public class OrderItemDTO {
 
     public void setUnitPrice(Double unitPrice) {
         this.unitPrice = unitPrice;
+    }
+
+    public Boolean getIsWholesale() {
+        return isWholesale;
+    }
+
+    public void setIsWholesale(Boolean isWholesale) {
+        this.isWholesale = isWholesale;
+    }
+
+    public Integer getWholesaleStock() {
+        return wholesaleStock;
+    }
+
+    public void setWholesaleStock(Integer wholesaleStock) {
+        this.wholesaleStock = wholesaleStock;
     }
 }

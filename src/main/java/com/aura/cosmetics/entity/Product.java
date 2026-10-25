@@ -1,7 +1,9 @@
 package com.aura.cosmetics.entity;
 
 import com.aura.cosmetics.enums.ProductStatus;
+import com.aura.cosmetics.enums.PromotionType;
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,15 +24,39 @@ public class Product {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    /** Prix de vente au detail (public) - conserve pour compatibilite rapide */
     @Column(nullable = false)
     private Double price;
 
+    /** Prix grossiste unitaire - conserve pour compatibilite rapide */
     private Double wholesalePrice;
 
+    /** Nombre de pieces dans un carton grossiste */
     private Integer wholesaleMinQty = 12;
 
-    @Column(nullable = false)
-    private Integer stock;
+    /** Notion de promotion sur le produit */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "promotion_type")
+    private PromotionType promotionType;
+
+    /** Valeur de promotion : pourcentage (ex: 20) ou valeur concrete / reduction en DZD (ex: 500) */
+    @Column(name = "promotion_value")
+    private Double promotionValue;
+
+    /** Date d'activation de la promotion */
+    @Column(name = "promotion_start_date")
+    private LocalDateTime promotionStartDate;
+
+    /** Date de fin de promotion (optionnelle) */
+    @Column(name = "promotion_end_date")
+    private LocalDateTime promotionEndDate;
+
+    /** Liste structuree des prix (DETAIL + GROS + paliers futurs) */
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private List<ProductPrice> prices = new ArrayList<>();
+
+    @Embedded
+    private ProductStock stock = new ProductStock();
 
     private Double rating = 5.0;
 
@@ -62,8 +88,94 @@ public class Product {
     public void setWholesalePrice(Double wholesalePrice) { this.wholesalePrice = wholesalePrice; }
     public Integer getWholesaleMinQty() { return wholesaleMinQty; }
     public void setWholesaleMinQty(Integer wholesaleMinQty) { this.wholesaleMinQty = wholesaleMinQty; }
-    public Integer getStock() { return stock; }
-    public void setStock(Integer stock) { this.stock = stock; }
+
+    public PromotionType getPromotionType() { return promotionType; }
+    public void setPromotionType(PromotionType promotionType) { this.promotionType = promotionType; }
+    public Double getPromotionValue() { return promotionValue; }
+    public void setPromotionValue(Double promotionValue) { this.promotionValue = promotionValue; }
+    public LocalDateTime getPromotionStartDate() { return promotionStartDate; }
+    public void setPromotionStartDate(LocalDateTime promotionStartDate) { this.promotionStartDate = promotionStartDate; }
+    public LocalDateTime getPromotionEndDate() { return promotionEndDate; }
+    public void setPromotionEndDate(LocalDateTime promotionEndDate) { this.promotionEndDate = promotionEndDate; }
+
+    /** Verifie si la promotion est actuellement active en fonction de sa date d'activation et eventuelle date de fin */
+    public boolean isPromotionActive() {
+        if (promotionType == null || promotionValue == null || promotionValue <= 0) {
+            return false;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        if (promotionStartDate != null && now.isBefore(promotionStartDate)) {
+            return false;
+        }
+        if (promotionEndDate != null && now.isAfter(promotionEndDate)) {
+            return false;
+        }
+        return true;
+    }
+
+    /** Calcule le prix remisé selon le type (pourcentage ou valeur concrète) */
+    public Double getDiscountedPrice() {
+        if (price == null) return 0.0;
+        if (!isPromotionActive()) {
+            return price;
+        }
+        if (promotionType == PromotionType.PERCENTAGE) {
+            double discounted = price * (1.0 - (promotionValue / 100.0));
+            return Math.max(0.0, Math.round(discounted * 100.0) / 100.0);
+        } else if (promotionType == PromotionType.FIXED_AMOUNT) {
+            double discounted = price - promotionValue;
+            return Math.max(0.0, Math.round(discounted * 100.0) / 100.0);
+        }
+        return price;
+    }
+
+    /** Stock en gros (cartons) directement lie au stock produit */
+    public Integer getWholesaleStock() {
+        return getStock().getCartons();
+    }
+
+    public void setWholesaleStock(Integer wholesaleStock) {
+        if (this.stock == null) {
+            this.stock = new ProductStock();
+        }
+        this.stock.setCartons(wholesaleStock != null ? Math.max(0, wholesaleStock) : 0);
+    }
+
+    public List<ProductPrice> getPrices() { return prices; }
+    public void setPrices(List<ProductPrice> prices) {
+        this.prices.clear();
+        if (prices != null) {
+            for (ProductPrice pp : prices) {
+                addPrice(pp);
+            }
+        }
+    }
+    public void addPrice(ProductPrice pp) {
+        this.prices.add(pp);
+        pp.setProduct(this);
+    }
+    public void removePrice(ProductPrice pp) {
+        this.prices.remove(pp);
+        pp.setProduct(null);
+    }
+    public ProductStock getStock() {
+        if (this.stock == null) {
+            this.stock = new ProductStock();
+        }
+        return this.stock;
+    }
+    public void setStock(ProductStock stock) {
+        this.stock = stock;
+    }
+    public void setStock(Integer totalUnits) {
+        if (this.stock == null) {
+            this.stock = new ProductStock();
+        }
+        this.stock.setTotalUnits(totalUnits != null ? totalUnits : 0);
+    }
+    public Integer getTotalStock() {
+        return getStock().getTotalUnits();
+    }
     public Double getRating() { return rating; }
     public void setRating(Double rating) { this.rating = rating; }
     public ProductStatus getStatus() { return status; }

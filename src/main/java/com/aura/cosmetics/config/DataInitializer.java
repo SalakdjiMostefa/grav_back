@@ -4,6 +4,9 @@ import com.aura.cosmetics.entity.Category;
 import com.aura.cosmetics.entity.Order;
 import com.aura.cosmetics.entity.OrderItem;
 import com.aura.cosmetics.entity.Product;
+import com.aura.cosmetics.entity.ProductPrice;
+import com.aura.cosmetics.enums.PriceType;
+import com.aura.cosmetics.enums.PromotionType;
 import com.aura.cosmetics.entity.ProductImage;
 import com.aura.cosmetics.entity.User;
 import com.aura.cosmetics.enums.OrderStatus;
@@ -78,7 +81,7 @@ public class DataInitializer implements CommandLineRunner {
         // Seed demo approved wholesale partner
         if (userRepository.findByEmail("revendeur@salon-paris.fr").isEmpty()) {
             User proApproved = new User();
-            proApproved.setFullName("Leïla Benali");
+            proApproved.setFullName("Leila Benali");
             proApproved.setEmail("revendeur@salon-paris.fr");
             proApproved.setPassword(passwordEncoder.encode("pro2026"));
             proApproved.setPhone("06 77 88 99 00");
@@ -112,7 +115,7 @@ public class DataInitializer implements CommandLineRunner {
             userRepository.save(proPending);
         }
 
-        // Populate wholesale prices for all products
+        // Populate wholesale prices and sample promotions for products if missing
         Double[] defaultWholesalePrices = new Double[] { 24.50, 21.00, 19.00, 14.00, 16.50, 27.00 };
         var products = productRepository.findAll();
         for (int i = 0; i < products.size(); i++) {
@@ -124,6 +127,18 @@ public class DataInitializer implements CommandLineRunner {
             }
             if (p.getWholesaleMinQty() == null || p.getWholesaleMinQty() <= 0) {
                 p.setWholesaleMinQty(12);
+                updated = true;
+            }
+            // Demo promotions
+            if (i == 0 && p.getPromotionType() == null) {
+                p.setPromotionType(PromotionType.PERCENTAGE);
+                p.setPromotionValue(20.0); // -20%
+                p.setPromotionStartDate(LocalDateTime.now().minusDays(2));
+                updated = true;
+            } else if (i == 1 && p.getPromotionType() == null) {
+                p.setPromotionType(PromotionType.FIXED_AMOUNT);
+                p.setPromotionValue(5.0); // -5.00 DZD
+                p.setPromotionStartDate(LocalDateTime.now().minusDays(1));
                 updated = true;
             }
             if (updated) {
@@ -155,7 +170,7 @@ public class DataInitializer implements CommandLineRunner {
 
         // Grossiste Approuvé
         User proApproved = new User();
-        proApproved.setFullName("Leïla Benali");
+        proApproved.setFullName("Leila Benali");
         proApproved.setEmail("revendeur@salon-paris.fr");
         proApproved.setPassword(passwordEncoder.encode("pro2026"));
         proApproved.setPhone("06 77 88 99 00");
@@ -215,7 +230,7 @@ public class DataInitializer implements CommandLineRunner {
         Product p1 = new Product();
         p1.setName("Élixir Céleste Régénérant");
         p1.setBrand("AURA Botanique");
-        p1.setDescription("Sérum ultra-concentré à l’acide hyaluronique pur et extraits de rose sauvage de Provence. Repulpe instantanément l’épiderme et illumine le teint.");
+        p1.setDescription("Sérum ultra-concentré à l'acide hyaluronique pur et extraits de rose sauvage de Provence. Repulpe instantanément l'épiderme et illumine le teint.");
         p1.setPrice(49.00);
         p1.setWholesalePrice(24.50);
         p1.setWholesaleMinQty(12);
@@ -223,8 +238,14 @@ public class DataInitializer implements CommandLineRunner {
         p1.setRating(4.9);
         p1.setStatus(ProductStatus.NOUVEAU);
         p1.setCategory(catSerums);
+        p1.setPromotionType(PromotionType.PERCENTAGE);
+        p1.setPromotionValue(20.0);
+        p1.setPromotionStartDate(LocalDateTime.now().minusDays(2));
         p1.addImage(new ProductImage("elixir.jpg", "https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?auto=format&fit=crop&w=800&q=80", 1));
-        productRepository.save(p1);
+        Product p1Saved = productRepository.save(p1);
+        p1Saved.addPrice(new ProductPrice(PriceType.DETAIL, 49.0, 1, "Vente au Détail"));
+        p1Saved.addPrice(new ProductPrice(PriceType.GROS, 24.5, 12, "Prix Grossiste - Carton de 12 pcs"));
+        productRepository.save(p1Saved);
 
         Product p2 = new Product();
         p2.setName("Crème Velours Éclat Divin");
@@ -237,13 +258,19 @@ public class DataInitializer implements CommandLineRunner {
         p2.setRating(4.8);
         p2.setStatus(ProductStatus.EN_STOCK);
         p2.setCategory(catCremes);
+        p2.setPromotionType(PromotionType.FIXED_AMOUNT);
+        p2.setPromotionValue(5.0);
+        p2.setPromotionStartDate(LocalDateTime.now().minusDays(1));
         p2.addImage(new ProductImage("creme.jpg", "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?auto=format&fit=crop&w=800&q=80", 1));
-        productRepository.save(p2);
+        Product p2Saved = productRepository.save(p2);
+        p2Saved.addPrice(new ProductPrice(PriceType.DETAIL, 42.5, 1, "Vente au Détail"));
+        p2Saved.addPrice(new ProductPrice(PriceType.GROS, 21.0, 12, "Prix Grossiste - Carton de 12 pcs"));
+        productRepository.save(p2Saved);
 
         Product p3 = new Product();
-        p3.setName("Huile Précieuse d’Argan & Néroli");
+        p3.setName("Huile Précieuse d'Argan & Néroli");
         p3.setBrand("AURA Botanique");
-        p3.setDescription("Huile sèche réparatrice pour le visage et le cou. Fini satiné non gras au parfum délicat et envoûtant de fleur d’oranger.");
+        p3.setDescription("Huile sèche réparatrice pour le visage et le cou. Fini satiné non gras au parfum délicat et envoûtant de fleur d'oranger.");
         p3.setPrice(38.00);
         p3.setWholesalePrice(19.00);
         p3.setWholesaleMinQty(12);
@@ -252,7 +279,10 @@ public class DataInitializer implements CommandLineRunner {
         p3.setStatus(ProductStatus.EN_STOCK);
         p3.setCategory(catSerums);
         p3.addImage(new ProductImage("huile.jpg", "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80", 1));
-        productRepository.save(p3);
+        Product p3Saved = productRepository.save(p3);
+        p3Saved.addPrice(new ProductPrice(PriceType.DETAIL, 38.0, 1, "Vente au Détail"));
+        p3Saved.addPrice(new ProductPrice(PriceType.GROS, 19.0, 12, "Prix Grossiste - Carton de 12 pcs"));
+        productRepository.save(p3Saved);
 
         Product p4 = new Product();
         p4.setName("Lotion Tonique Florale Immortelle");
@@ -266,7 +296,10 @@ public class DataInitializer implements CommandLineRunner {
         p4.setStatus(ProductStatus.EN_STOCK);
         p4.setCategory(catNettoyants);
         p4.addImage(new ProductImage("lotion.jpg", "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=800&q=80", 1));
-        productRepository.save(p4);
+        Product p4Saved = productRepository.save(p4);
+        p4Saved.addPrice(new ProductPrice(PriceType.DETAIL, 26.0, 1, "Vente au Détail"));
+        p4Saved.addPrice(new ProductPrice(PriceType.GROS, 13.0, 12, "Prix Grossiste - Carton de 12 pcs"));
+        productRepository.save(p4Saved);
 
         Product p5 = new Product();
         p5.setName("Masque Purifiant Argile Blanche & Spiruline");
@@ -280,12 +313,15 @@ public class DataInitializer implements CommandLineRunner {
         p5.setStatus(ProductStatus.EN_STOCK);
         p5.setCategory(catMasques);
         p5.addImage(new ProductImage("masque.jpg", "https://images.unsplash.com/photo-1556228722-d0b71946ec98?auto=format&fit=crop&w=800&q=80", 1));
-        productRepository.save(p5);
+        Product p5Saved = productRepository.save(p5);
+        p5Saved.addPrice(new ProductPrice(PriceType.DETAIL, 32.0, 1, "Vente au Détail"));
+        p5Saved.addPrice(new ProductPrice(PriceType.GROS, 16.0, 12, "Prix Grossiste - Carton de 12 pcs"));
+        productRepository.save(p5Saved);
 
         Product p6 = new Product();
         p6.setName("Baume Nuit Renaissance Cellulaire");
         p6.setBrand("Maison AURA");
-        p6.setDescription("Soin nocturne intensif à la cire d’abeille bio et céramides végétales. Régénère l’épiderme pendant le sommeil pour un réveil lumineux.");
+        p6.setDescription("Soin nocturne intensif à la cire d'abeille bio et céramides végétales. Régénère l'épiderme pendant le sommeil pour un réveil lumineux.");
         p6.setPrice(54.00);
         p6.setWholesalePrice(27.00);
         p6.setWholesaleMinQty(12);
@@ -294,7 +330,10 @@ public class DataInitializer implements CommandLineRunner {
         p6.setStatus(ProductStatus.NOUVEAU);
         p6.setCategory(catCremes);
         p6.addImage(new ProductImage("baume.jpg", "https://images.unsplash.com/photo-1608248597359-0091871e411b?auto=format&fit=crop&w=800&q=80", 1));
-        productRepository.save(p6);
+        Product p6Saved = productRepository.save(p6);
+        p6Saved.addPrice(new ProductPrice(PriceType.DETAIL, 54.0, 1, "Vente au Détail"));
+        p6Saved.addPrice(new ProductPrice(PriceType.GROS, 27.0, 12, "Prix Grossiste - Carton de 12 pcs"));
+        productRepository.save(p6Saved);
     }
 
     private void initOrders() {
@@ -306,8 +345,8 @@ public class DataInitializer implements CommandLineRunner {
         o1.setTotal(91.50);
         o1.setStatus(OrderStatus.PAYEE);
         o1.setCreatedAt(LocalDateTime.now().minusHours(4));
-        o1.addItem(new OrderItem(1L, "Élixir Céleste Régénérant", 1, 49.00));
-        o1.addItem(new OrderItem(2L, "Crème Velours Éclat Divin", 1, 42.50));
+        o1.addItem(new OrderItem(1L, "Élixir Céleste Régénérant", 1, 49.00, false, 15));
+        o1.addItem(new OrderItem(2L, "Crème Velours Éclat Divin", 1, 42.50, false, 10));
         orderRepository.save(o1);
     }
 }

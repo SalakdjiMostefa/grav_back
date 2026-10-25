@@ -5,6 +5,7 @@ import com.aura.cosmetics.dto.OrderItemDTO;
 import com.aura.cosmetics.entity.Order;
 import com.aura.cosmetics.entity.OrderItem;
 import com.aura.cosmetics.entity.Product;
+import com.aura.cosmetics.entity.ProductStock;
 import com.aura.cosmetics.enums.OrderStatus;
 import com.aura.cosmetics.enums.ProductStatus;
 import com.aura.cosmetics.repository.OrderRepository;
@@ -46,14 +47,17 @@ public class OrderService {
                         itemDto.getProductId(),
                         itemDto.getProductName(),
                         itemDto.getQuantity() != null ? itemDto.getQuantity() : 1,
-                        itemDto.getUnitPrice() != null ? itemDto.getUnitPrice() : 0.0
+                        itemDto.getUnitPrice() != null ? itemDto.getUnitPrice() : 0.0,
+                        Boolean.TRUE.equals(itemDto.getIsWholesale()),
+                        itemDto.getWholesaleStock()
                 );
                 items.add(item);
 
                 // Décrémenter le stock du produit en temps réel
                 if (itemDto.getProductId() != null) {
                     productRepository.findById(itemDto.getProductId()).ifPresent(prod -> {
-                        int remaining = Math.max(0, prod.getStock() - item.getQuantity());
+                        int currentTotal = prod.getStock().getTotalUnits();
+                        int remaining = Math.max(0, currentTotal - item.getQuantity());
                         prod.setStock(remaining);
                         if (remaining == 0) {
                             prod.setStatus(ProductStatus.RUPTURE);
@@ -106,7 +110,14 @@ public class OrderService {
 
         if (order.getItems() != null) {
             List<OrderItemDTO> itemDtos = order.getItems().stream()
-                    .map(it -> new OrderItemDTO(it.getProductId(), it.getProductName(), it.getQuantity(), it.getUnitPrice()))
+                    .map(it -> new OrderItemDTO(
+                            it.getProductId(),
+                            it.getProductName(),
+                            it.getQuantity(),
+                            it.getUnitPrice(),
+                            it.getIsWholesale(),
+                            it.getWholesaleStock()
+                    ))
                     .collect(Collectors.toList());
             dto.setItems(itemDtos);
         }

@@ -47,46 +47,103 @@ public class AuthService {
         );
 
         User saved = userRepository.save(user);
-        String token = jwtUtils.generateToken(saved.getEmail(), saved.getRole().name());
-
-        return buildResponse(token, saved);
+        return buildResponse(saved);
     }
 
     public AuthResponse registerWholesale(WholesaleRegistrationRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Un compte existe déjà avec cet email : " + request.getEmail());
+        String email = request.getEmail();
+        if (email == null || email.trim().isEmpty()) {
+            String cleanPhone = request.getPhone() != null ? request.getPhone().replaceAll("[^0-9]", "") : "";
+            email = "pro." + (!cleanPhone.isEmpty() ? cleanPhone : System.currentTimeMillis()) + "@aura.pro";
+        } else {
+            email = email.trim();
+        }
+
+        // Si le client existe déjà (compte client connecté ou existant)
+        java.util.Optional<User> existingUserOpt = userRepository.findByEmail(email);
+        if (existingUserOpt.isPresent()) {
+            User existing = existingUserOpt.get();
+            if (existing.getWholesaleStatus() == WholesaleStatus.APPROVED) {
+                throw new RuntimeException("Ce compte est déjà un partenaire grossiste validé.");
+            }
+            if (existing.getWholesaleStatus() == WholesaleStatus.PENDING) {
+                throw new RuntimeException("Votre demande grossiste est déjà en cours d'examen.");
+            }
+
+            // Mise à niveau du compte : conservation du même email, mot de passe et adresse
+            existing.setWholesaleStatus(WholesaleStatus.PENDING);
+            existing.setWholesaleRequestedAt(LocalDateTime.now());
+            if (request.getCompanyName() != null && !request.getCompanyName().isBlank()) {
+                existing.setCompanyName(request.getCompanyName().trim());
+            } else if (existing.getCompanyName() == null || existing.getCompanyName().isBlank()) {
+                existing.setCompanyName("Établissement Pro");
+            }
+            if (request.getPhone() != null && !request.getPhone().isBlank()) {
+                existing.setBusinessPhone(request.getPhone().trim());
+                if (existing.getPhone() == null || existing.getPhone().isBlank()) {
+                    existing.setPhone(request.getPhone().trim());
+                }
+            }
+            if (request.getBusinessAddress() != null && !request.getBusinessAddress().isBlank()) {
+                existing.setBusinessAddress(request.getBusinessAddress().trim());
+                if (existing.getAddress() == null || existing.getAddress().isBlank()) {
+                    existing.setAddress(request.getBusinessAddress().trim());
+                }
+            }
+            User saved = userRepository.save(existing);
+            return buildResponse(saved);
+        }
+
+        // Nouveau compte : mot de passe requis
+        if (request.getPassword() == null || request.getPassword().length() < 6) {
+            throw new RuntimeException("Le mot de passe doit comporter au moins 6 caractères.");
         }
 
         User user = new User();
         user.setFullName(request.getFullName());
-        user.setEmail(request.getEmail());
+        user.setEmail(email);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setPhone(request.getPhone());
         user.setAddress(request.getBusinessAddress());
         user.setRole(Role.ROLE_CLIENT);
         user.setWholesaleStatus(WholesaleStatus.PENDING);
-        user.setCompanyName(request.getCompanyName());
-        user.setTradeRegister(request.getTradeRegister());
+        user.setCompanyName(request.getCompanyName() != null && !request.getCompanyName().isBlank() ? request.getCompanyName() : "Établissement Pro");
+        user.setTradeRegister(request.getTradeRegister() != null ? request.getTradeRegister() : "");
         user.setBusinessPhone(request.getPhone());
         user.setBusinessAddress(request.getBusinessAddress());
         user.setWholesaleRequestedAt(LocalDateTime.now());
 
         User saved = userRepository.save(user);
-        String token = jwtUtils.generateToken(saved.getEmail(), saved.getRole().name());
-
-        return buildResponse(token, saved);
+        return buildResponse(saved);
     }
 
     public AuthResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Email ou mot de passe incorrect."));
+        String identifier = request.getEmail() != null ? request.getEmail().trim() : "";
+        User user = userRepository.findByEmail(identifier)
+                .or(() -> userRepository.findByPhone(identifier))
+                .orElseThrow(() -> new RuntimeException("Email/Téléphone ou mot de passe incorrect."));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new RuntimeException("Email ou mot de passe incorrect.");
         }
 
-        String token = jwtUtils.generateToken(user.getEmail(), user.getRole().name());
-        return buildResponse(token, user);
+        return buildResponse(user);
+    }
+
+    public AuthResponse refreshToken(String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new RuntimeException("Refresh token manquant.");
+        }
+
+        if (!jwtUtils.validateRefreshToken(refreshToken)) {
+            throw new RuntimeException("Session expirée. Veuillez vous reconnecter.");
+        }
+
+        String email = jwtUtils.getEmailFromToken(refreshToken);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Compte utilisateur introuvable."));
+
+        return buildResponse(user);
     }
 
     @Transactional(readOnly = true)
@@ -139,9 +196,22 @@ public class AuthService {
         return dto;
     }
 
-    private AuthResponse buildResponse(String token, User user) {
-        return new AuthResponse(
-                token,
+    public AuthResponse getCurrentUser(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvÃ© avec l'email : " + email));
+        return buildResponse(user);
+    }
+
+    public AuthResponse toAuthResponse(User user) {
+        return buildResponse(user);
+    }
+
+    private AuthResponse buildResponse(User user) {
+        String accessToken = jwtUtils.generateAccessToken(user.getEmail(), user.getRole().name());
+        String refreshToken = jwtUtils.generateRefreshToken(user.getEmail());
+
+        AuthResponse response = new AuthResponse(
+                accessToken,
                 user.getId(),
                 user.getFullName(),
                 user.getEmail(),
@@ -152,5 +222,7 @@ public class AuthService {
                 user.getCompanyName(),
                 user.getTradeRegister()
         );
+        response.setRefreshToken(refreshToken);
+        return response;
     }
 }

@@ -22,6 +22,12 @@ public class OrderItem {
     @Column(nullable = false)
     private Double unitPrice;
 
+    @Column(name = "is_wholesale")
+    private Boolean isWholesale = false;
+
+    @Column(name = "wholesale_stock")
+    private Integer wholesaleStock;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id")
     private Order order;
@@ -33,6 +39,16 @@ public class OrderItem {
         this.productName = productName;
         this.quantity = quantity;
         this.unitPrice = unitPrice;
+        this.isWholesale = false;
+    }
+
+    public OrderItem(Long productId, String productName, Integer quantity, Double unitPrice, Boolean isWholesale, Integer wholesaleStock) {
+        this.productId = productId;
+        this.productName = productName;
+        this.quantity = quantity;
+        this.unitPrice = unitPrice;
+        this.isWholesale = isWholesale != null ? isWholesale : false;
+        this.wholesaleStock = wholesaleStock;
     }
 
     public Long getId() {
@@ -73,6 +89,22 @@ public class OrderItem {
 
     public void setUnitPrice(Double unitPrice) {
         this.unitPrice = unitPrice;
+    }
+
+    public Boolean getIsWholesale() {
+        return isWholesale != null ? isWholesale : false;
+    }
+
+    public void setIsWholesale(Boolean isWholesale) {
+        this.isWholesale = isWholesale;
+    }
+
+    public Integer getWholesaleStock() {
+        return wholesaleStock;
+    }
+
+    public void setWholesaleStock(Integer wholesaleStock) {
+        this.wholesaleStock = wholesaleStock;
     }
 
     public Order getOrder() {
